@@ -1,0 +1,359 @@
+dom-module#quill-writer
+  link(rel="stylesheet", href="/css/medium-editor.css")
+  template
+    style.
+      :host ::content #editor {
+        min-height: 10em;
+        font-size: 1.2em;
+        padding: 2em;
+      }
+      
+      :host ::content #editor:focus {
+        outline: none;
+      }
+      
+      :host ::content .hidden {
+        display: none;
+      }
+      
+      
+      :host ::content .tappable {
+        cursor: pointer;
+      }
+    
+    form.ui.fluid.form.card#card
+      input#source(type="hidden", name="content")
+      .content
+        #editor
+        textarea.disabled.hidden#viewer(disabled)
+      .extra.content.hidden#extra
+        i.large.code.icon.tappable(on-tap="_showSource")
+        .right.floated.author
+          img.ui.avatar.image(src="http://semantic-ui.com/images/avatar/small/matt.jpg")
+
+  script(src="/scripts/medium-editor.js")
+  script(src="/scripts/me-markdown.standalone.js")
+  script.
+    Polymer({
+      is: 'quill-writer',
+      // these are scratchpads for sketches of behavior
+      // please do re-write them in a more comprehensive way!
+      // TODO: dig into `virtual-dom`
+      _activate: function() {
+        this.$.editor.focus();
+      },
+      _showSource: function() {
+        $(this.$.viewer).slideToggle();
+      },
+      ready: function() {
+        console.log('[QUILL:WRITER]', 'ready');
+        
+        var self = this;
+        
+        var editor = new MediumEditor(self.$.editor, {
+          activeButtonClass: 'active',
+          buttonLabels: 'fontawesome',
+          extensions: {
+            markdown: new MeMarkdown(function (md) {
+              self.$.source.value = md;
+              self.$.viewer.innerText = md;
+            })
+          },
+          placeholder: {
+            text: 'Tell your story…',
+          },
+          toolbar: {
+            // originals from:
+            // https://github.com/yabwe/medium-editor/blob/master/src/js/defaults/buttons.js
+            buttons: [
+              {
+                name: 'h1',
+                action: 'append-h1',
+                aria: 'header type one',
+                tagNames: ['h1'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H1</b>',
+                contentFA: '<i class="icon header"><sup>1</sup>'
+              },
+              {
+                name: 'h2',
+                action: 'append-h2',
+                aria: 'header type two',
+                tagNames: ['h2'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H2</b>',
+                contentFA: '<i class="icon header"><sup>2</sup>'
+              },
+              {
+                name: 'h3',
+                action: 'append-h3',
+                aria: 'header type three',
+                tagNames: ['h3'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H3</b>',
+                contentFA: '<i class="icon header"><sup>3</sup>'
+              },
+              {
+                name: 'bold',
+                action: 'bold',
+                aria: 'bold',
+                tagNames: ['b', 'strong'],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'font-weight',
+                  value: '700|bold'
+                },
+                useQueryState: true,
+                contentDefault: '<b>B</b>',
+                contentFA: '<i class="icon bold"></i>'
+              },
+              {
+                name: 'italic',
+                action: 'italic',
+                aria: 'italic',
+                tagNames: ['i', 'em'],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'font-style',
+                  value: 'italic'
+                },
+                useQueryState: true,
+                contentDefault: '<b><i>I</i></b>',
+                contentFA: '<i class="icon italic"></i>'
+              },
+              {
+                name: 'underline',
+                action: 'underline',
+                aria: 'underline',
+                tagNames: ['u'],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-decoration',
+                  value: 'underline'
+                },
+                useQueryState: true,
+                contentDefault: '<b><u>U</u></b>',
+                contentFA: '<i class="icon underline"></i>'
+              },
+              {
+                name: 'strikethrough',
+                action: 'strikethrough',
+                aria: 'strike through',
+                tagNames: ['strike'],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-decoration',
+                  value: 'line-through'
+                },
+                useQueryState: true,
+                contentDefault: '<s>A</s>',
+                contentFA: '<i class="icon strikethrough"></i>'
+              },
+              /*{
+                name: 'superscript',
+                action: 'superscript',
+                aria: 'superscript',
+                tagNames: ['sup'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>x<sup>1</sup></b>',
+                contentFA: '<i class="icon superscript"></i>'
+              },
+              {
+                name: 'subscript',
+                action: 'subscript',
+                aria: 'subscript',
+                tagNames: ['sub'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>x<sub>1</sub></b>',
+                contentFA: '<i class="icon subscript"></i>'
+              },*/
+              {
+                name: 'image',
+                action: 'image',
+                aria: 'image',
+                tagNames: ['img'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>image</b>',
+                contentFA: '<i class="icon picture"></i>'
+              },
+              {
+                name: 'orderedlist',
+                action: 'insertorderedlist',
+                aria: 'ordered list',
+                tagNames: ['ol'],
+                classList: ['ui', 'tooltipped', 'button'],
+                useQueryState: true,
+                contentDefault: '<b>1.</b>',
+                contentFA: '<i class="icon list ordered"></i>'
+              },
+              {
+                name: 'unorderedlist',
+                action: 'insertunorderedlist',
+                aria: 'unordered list',
+                tagNames: ['ul'],
+                classList: ['ui', 'tooltipped', 'button'],
+                useQueryState: true,
+                contentDefault: '<b>&bull;</b>',
+                contentFA: '<i class="icon list unordered"></i>'
+              },
+              /*{
+                name: 'indent',
+                action: 'indent',
+                aria: 'indent',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>&rarr;</b>',
+                contentFA: '<i class="icon indent"></i>'
+              },
+              {
+                name: 'outdent',
+                action: 'outdent',
+                aria: 'outdent',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>&larr;</b>',
+                contentFA: '<i class="icon outdent"></i>'
+              },
+              {
+                name: 'justifyCenter',
+                action: 'justifyCenter',
+                aria: 'center justify',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-align',
+                  value: 'center'
+                },
+                contentDefault: '<b>C</b>',
+                contentFA: '<i class="icon align center"></i>'
+              },
+              {
+                name: 'justifyFull',
+                action: 'justifyFull',
+                aria: 'full justify',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-align',
+                  value: 'justify'
+                },
+                contentDefault: '<b>J</b>',
+                contentFA: '<i class="icon align justify"></i>'
+              },
+              {
+                name: 'justifyLeft',
+                action: 'justifyLeft',
+                aria: 'left justify',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-align',
+                  value: 'left'
+                },
+                contentDefault: '<b>L</b>',
+                contentFA: '<i class="icon align left"></i>'
+              },
+              {
+                name: 'justifyRight',
+                action: 'justifyRight',
+                aria: 'right justify',
+                tagNames: [],
+                classList: ['ui', 'tooltipped', 'button'],
+                style: {
+                  prop: 'text-align',
+                  value: 'right'
+                },
+                contentDefault: '<b>R</b>',
+                contentFA: '<i class="icon align right"></i>'
+              },*/
+              // Known inline elements that are not removed, or not removed consistantly across browsers:
+              // <span>, <label>, <br>
+              /*{
+                name: 'removeFormat',
+                aria: 'remove formatting',
+                action: 'removeFormat',
+                contentDefault: '<b>X</b>',
+                classList: ['ui', 'tooltipped', 'button'],
+                contentFA: '<i class="icon eraser"></i>'
+              },*/
+
+              /***** Buttons for appending block elements (append-<element> action) *****/
+
+              {
+                name: 'quote',
+                action: 'append-blockquote',
+                aria: 'blockquote',
+                tagNames: ['blockquote'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>&ldquo;</b>',
+                contentFA: '<i class="icon quote right"></i>'
+              },
+              {
+                name: 'pre',
+                action: 'append-pre',
+                aria: 'preformatted text',
+                tagNames: ['pre'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>0101</b>',
+                contentFA: '<i class="icon code"></i>'
+              },
+              /*{
+                name: 'h4',
+                action: 'append-h4',
+                aria: 'header type four',
+                tagNames: ['h4'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H4</b>',
+                contentFA: '<i class="icon header"><sup>4</sup>'
+              },
+              {
+                name: 'h5',
+                action: 'append-h5',
+                aria: 'header type five',
+                tagNames: ['h5'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H5</b>',
+                contentFA: '<i class="icon header"><sup>5</sup>'
+              },
+              {
+                name: 'h6',
+                action: 'append-h6',
+                aria: 'header type six',
+                tagNames: ['h6'],
+                classList: ['ui', 'tooltipped', 'button'],
+                contentDefault: '<b>H6</b>',
+                contentFA: '<i class="icon header"><sup>6</sup>'
+              }*/
+            ]
+          },
+        });
+        
+
+        editor.subscribe('focus', function() {
+          self._raiseCard();
+        });
+        
+        editor.subscribe('blur', function() {
+          self._lowerCard();
+          self._save();
+        });
+        
+        editor.subscribe('editableInput', function() {
+          self._showExtra();
+        });
+        
+        $('.tooltipped').popup();
+      },
+      _save: function() {
+        // TODO: implement
+      },
+      _lowerCard: function() {
+        $(this.$.card).removeClass('raised');
+      },
+      _raiseCard: function() {
+        $(this.$.card).addClass('raised');
+      },
+      _showExtra: function() {
+        $(this.$.extra).slideDown();
+      }
+    });

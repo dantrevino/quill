@@ -3,8 +3,6 @@ dom-module#maki-application
     style.
       :host ::content .brand {
         font-family: 'Playball', cursive;
-        font-size: 1.2em;
-        color: #fff;
         margin-right: 0.2em;
         -webkit-transition-property: text-shadow;
         -webkit-transition-duration: 1s;
@@ -15,7 +13,6 @@ dom-module#maki-application
       }
       
       :host ::content .brand:hover {
-        color: #fff;
         text-shadow: 0 0 0.5em #fff;
         -webkit-transition-property: text-shadow;
         -webkit-transition-duration: 1s;
@@ -25,7 +22,24 @@ dom-module#maki-application
         transition-timing-function: ease-in-out;
       }
       
-      :host ::content maki-navbar .logo.item img {
+      :host ::content maki-masthead maki-navbar .logo.brand.item {
+        margin-right: 2em !important;
+      }
+
+      :host ::content maki-masthead .brand.normal {
+        font-size: 1.3em;
+        position: absolute;
+        top: 0;
+        left: 0px;
+        padding-right: 1em;
+      }
+
+      :host ::content maki-masthead .brand:not(.normal) {
+        font-size: 1.2em;
+        color: #fff;
+      }
+      
+      :host ::content maki-masthead maki-navbar .logo.item img {
         margin-right: 0.5em !important;
       }
 
@@ -34,24 +48,15 @@ dom-module#maki-application
     maki-channel(autoconnect, reconnect="true")
     //-maki-service
     //-maki-peer-manager(autoconnect, limit="128", strategy="lowest-latency")
-    
-    //-maki-navbar.ui.large.top.fixed.hidden.menu
-    //-maki-navbar.ui.vertical.inverted.sidebar.right.large.menu
-    
+
     maki-navbar.ui.large.top.fixed.hidden.menu
-    maki-navbar.ui.vertical.inverted.sidebar.right.large.menu
+    maki-sidebar.ui.vertical.inverted.sidebar.right.large.menu
 
-    maki-masthead#masthead
-
-    maki-viewport.ui.padded.container.content#viewport
-    
+    maki-masthead#masthead(narrow="true", centered="true")
     maki-viewport#viewport
-      //-quill-reader.ui.segment.text.container
 
     .ui.inverted.vertical.footer.segment
-      .ui.container
-        block footer
-          quill-footer
+      quill-footer.ui.container
 
     maki-analytics
 
@@ -150,12 +155,13 @@ dom-module#maki-application
         viewport.appendChild(view);
         viewport.toggleClass('loading', false);
 
-
         // handle masthead, if it exists
         if (masthead) {
           console.log('[MAKI:APPLICATION]', '_route', 'using component', masthead);
           self.$.masthead.setAttribute('src', ctx.path);
           self.$.masthead.setAttribute('component', masthead);
+        } else {
+          self.$.masthead.removeAttribute('component');
         }
         
         self.$.masthead.toggleClass('loading', false);

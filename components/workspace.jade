@@ -1,11 +1,20 @@
+// so clean!
+// TODO: use this as an example case!
+// TODO: split this into a layout, and have only the inner template
+// defined in a view/component/input arrangement.
 dom-module#quill-workspace
   template
-    .ui.vertical.stripe.segment.content
-      .ui.segment
-        h2.ui.horizontal.header.divider Welcome home!
-        p Here are some things that might interest you.
+    style.
+      :host ::content .unpadded {
+        margin: 0;
+        padding: 0 !important;
+      }
   
-      quill-writer.ui.segment
+    .ui.text.container.vertical.stripe.content.segment
+      h2.ui.horizontal.header.divider Welcome home!
+      
+    .ui.text.container.vertical.stripe.content.segment.unpadded
+      quill-writer
   
   script.
     Polymer({
