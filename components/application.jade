@@ -12,6 +12,10 @@ dom-module#maki-application
         transition-timing-function: ease-in-out;
       }
       
+      :host ::content .inverted .brand {
+        color: #fff;
+      }
+      
       :host ::content .brand:hover {
         text-shadow: 0 0 0.5em #fff;
         -webkit-transition-property: text-shadow;
@@ -21,7 +25,7 @@ dom-module#maki-application
         transition-duration: 1s;
         transition-timing-function: ease-in-out;
       }
-      
+
       :host ::content maki-masthead maki-navbar .logo.brand.item {
         margin-right: 2em !important;
       }
@@ -36,7 +40,6 @@ dom-module#maki-application
 
       :host ::content maki-masthead .brand:not(.normal) {
         font-size: 1.2em;
-        color: #fff;
       }
       
       :host ::content maki-masthead maki-navbar .logo.item img {
