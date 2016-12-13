@@ -1,7 +1,6 @@
 dom-module#quill-reader
   template
     #content
-
   script.
     Polymer({
       is: 'quill-reader',
@@ -20,15 +19,17 @@ dom-module#quill-reader
         var self = this;
         console.log('[QUILL:READER]', '_load', uri, back);
         self.toggleClass('loading', true);
-        
+
         // TODO: use this API instead:
         // fabric.get(self.src, function(err, data) { ... });
         $.getJSON(self.src, function(data) {
+          console.log('[QUILL:READER]', '_load', 'loaded', data);
           self.data = data;
-          self.source = data.content;
+          self.source = data.__content;
           self._render();
           self.toggleClass('loading', false);
-        });        
+        });
+
       },
       ready: function() {
         console.log('[QUILL:READER]', 'ready');

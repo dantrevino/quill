@@ -25,10 +25,6 @@ dom-module#maki-application
         transition-timing-function: ease-in-out;
       }
       
-      ::host ::content .top-padded.segment {
-        margin-top: 4em;
-      }
-      
       :host ::content maki-navbar .logo.item img {
         margin-right: 0.5em !important;
       }
@@ -41,8 +37,13 @@ dom-module#maki-application
     
     //-maki-navbar.ui.large.top.fixed.hidden.menu
     //-maki-navbar.ui.vertical.inverted.sidebar.right.large.menu
+    
+    maki-navbar.ui.large.top.fixed.hidden.menu
+    maki-navbar.ui.vertical.inverted.sidebar.right.large.menu
 
-    quill-masthead
+    maki-masthead#masthead
+
+    maki-viewport.ui.padded.container.content#viewport
     
     maki-viewport#viewport
       //-quill-reader.ui.segment.text.container
@@ -68,6 +69,7 @@ dom-module#maki-application
         components: { type: Object, value: {} },
         resources: { type: Object, observer: '_resourcesUpdated' },
         datastore: { type: Object },
+        config: { type: Object },
         worker: { type: Object },
         identity: { type: Object, notify: true },
         state: { type: String }
@@ -97,20 +99,32 @@ dom-module#maki-application
         var self = this;
         var viewport = this.$.viewport;
         var component = 'maki-undefined';
+        var masthead = null;
         var view = null;
+
+        if (!viewport) {
+          console.warn('[MAKI:APPLICATION]', 'no viewport provided');
+          return false;
+        }
+        
+        viewport.toggleClass('loading', true);
+        self.$.masthead.toggleClass('loading', true);
 
         for (var route in self.routes) {
           var regex = self.routes[route];
           
-          console.log('[QUILL:APPLICATION]', '_route', 'routing', route, regex);
-          console.log('[QUILL:APPLICATION]', '_route', 'comparing...', ctx.path);
+          console.log('[MAKI:APPLICATION]', '_route', 'routing', route, regex);
+          console.log('[MAKI:APPLICATION]', '_route', 'comparing...', ctx.path);
           
           if (regex.test(ctx.path)) {
+            masthead = self.resourceMap[route].options.components.masthead;
+            
             component = self.components[route];
             view = document.createElement(component);
             
-            console.log('[QUILL:APPLICATION]', '_route', 'found:', component);
-            console.log('[QUILL:APPLICATION]', '_route', 'selected:', view);
+            console.log('[MAKI:APPLICATION]', '_route', 'found:', component);
+            console.log('[MAKI:APPLICATION]', '_route', 'selected:', view);
+            console.log('[MAKI:APPLICATION]', '_route', 'masthead:', masthead);
 
             view.action = self.actionMap[route];
             view.type = self.resourceMap[route];
@@ -125,82 +139,103 @@ dom-module#maki-application
         }
         
         view.setAttribute('src', ctx.path);
-        view.setAttribute('type', view.type);
+        
+        if (!view.type) console.log('wat?  no view type?', ctx.path , view);
+        view.setAttribute('type', view.type.name);
 
         while (viewport.hasChildNodes()) {
           viewport.removeChild(viewport.lastChild);
         }
 
         viewport.appendChild(view);
+        viewport.toggleClass('loading', false);
+
+
+        // handle masthead, if it exists
+        if (masthead) {
+          console.log('[MAKI:APPLICATION]', '_route', 'using component', masthead);
+          self.$.masthead.setAttribute('src', ctx.path);
+          self.$.masthead.setAttribute('component', masthead);
+        }
+        
+        self.$.masthead.toggleClass('loading', false);
 
       },
       /*
           Configures the Router, which provides human-friendly URLs 
       
        */
-      _resourcesUpdated: function(resources) {
-        var self = this;
-        var _route = self._route.bind(self);
-        
-        self.resourceMap = {};
-        self.actionMap = {};
-        
-        console.log('[QUILL:APPLICATION]', '_resourcesUpdated', resources);
-        
-        Object.keys(resources).forEach(function(name) {
-          var definition = resources[name];
-          
-          console.log('[QUILL:APPLICATION]', '_resourcesUpdated', 'definition', definition);
-          
-          ['get', 'query'].forEach(function(action) {
-            var route = definition.routes[action];
-            if (!route) return;
-            
-            self.routes[route] = new RegExp(eval(definition.paths[action]));
-            self.components[route] = definition.components[action];
-            self.resourceMap[route] = definition;
-            self.actionMap[route] = action;
-            
-            page(route, _route);
-          });
-        });
-        
-        self.routes['/'] = new RegExp(/^\/$/);
-        self.components['/'] = (resources.Index && resources.Index.components) ? resources.Index.components.query : 'maki-index';
-        
-        page('/', _route);
-        page('*', _route);
-        
-        page();
-      },
-      created: function() {
-        var self = this;
-        console.log('[QUILL:APPLICATION]', 'created');
-        self.route = window.location.pathname;
-        //self.worker = new Worker('/worker.js');
-        // load the application configuration
-        $.ajax({
-          type: 'OPTIONS',
-          url: '/',
-          headers: {
-            'Accept': 'application/json'
-          },
-          success: function(data) {
-            self.config = data.config;
-            self.resources = data.resources;
-          }
-        });
-      },
-      ready: function() {
-        console.log('[QUILL:APPLICATION]', 'ready');
-        return;
-        
-        
-        self.identity = {};
-        
-        document.addEventListener('datastore:open', function() {
-          self.datastore = document.querySelector('maki-datastore');
-          self.datastore._sync();
-        });
-      }
+       _resourcesUpdated: function(resources) {
+         var self = this;
+         var _route = self._route.bind(self);
+         
+         self.resourceMap = {};
+         self.actionMap = {};
+         
+         console.log('[MAKI:APPLICATION]', '_resourcesUpdated', resources);
+         
+         Object.keys(resources).forEach(function(name) {
+           var definition = resources[name];
+           
+           console.log('[MAKI:APPLICATION]', '_resourcesUpdated', 'definition', definition);
+           
+           ['get', 'query'].forEach(function(action) {
+             var route = definition.routes[action];
+             if (!route) return;
+             
+             self.routes[route] = new RegExp(eval(definition.paths[action]));
+             self.components[route] = definition.components[action];
+             self.resourceMap[route] = definition;
+             self.actionMap[route] = action;
+             
+             page(route, _route);
+           });
+         });
+         
+         self.routes['/'] = new RegExp(/^\/$/);
+         self.components['/'] = (resources.Index && resources.Index.components) ? resources.Index.components.query : 'maki-index';
+         
+         page('/', _route);
+         page('*', _route);
+         
+         page();
+       },
+       created: function() {
+         var self = this;
+         console.log('[MAKI:APPLICATION]', 'created');
+         self.route = window.location.pathname;
+         //self.worker = new Worker('/worker.js');
+         // load the application configuration
+         $.ajax({
+           type: 'OPTIONS',
+           url: '/',
+           headers: {
+             'Accept': 'application/json'
+           },
+           success: function(data) {
+             self.config = data.config;
+             self.resources = data.resources;
+             self.$.masthead.data = data.service;
+           }
+         });
+       },
+       ready: function() {
+         console.log('[MAKI:APPLICATION]', 'ready');
+
+         $('.tooltipped').popup();
+         // fix menu when passed
+         $('.masthead').visibility({
+           once: false,
+           onBottomPassed: function() {
+             $('.fixed.menu').transition('fade in');
+           },
+           onBottomPassedReverse: function() {
+             $('.fixed.menu').transition('fade out');
+           }
+         });
+
+         // create sidebar and attach to menu open
+         $('.ui.sidebar').sidebar('attach events', '.toc.item');
+
+       }
     });
