@@ -16,9 +16,12 @@ dom-module#quill-writer
         display: none;
       }
       
-      
       :host ::content .tappable {
         cursor: pointer;
+      }
+      
+      :host ::content .search.dropdown > .label p {
+        display: none;
       }
     
     form.ui.fluid.form.card#card
@@ -26,7 +29,19 @@ dom-module#quill-writer
       .content
         #editor
         textarea.disabled.hidden#viewer(disabled)
-      .extra.content.hidden#extra
+      .extra.content.hidden.field#tags
+        .ui.multiple.search.selection.dropdown(multiple="")
+          input(type="hidden", name="tags")
+          i.dropdown.icon
+          .default.text Tags…
+          .menu
+            template(is="dom-repeat", items="{{topics}}")
+              .item.title(data-value$="{{item.id}}", href$="{{item.link}}")
+                strong.header
+                  small(style="color: rgba(0,0,0,.4);") &#35;
+                  span {{item.id}}
+                p {{item.description}}
+      .extra.content.hidden.field#extra
         i.large.code.icon.tappable(on-tap="_showSource")
         .right.floated.author
           img.ui.avatar.image(src="http://semantic-ui.com/images/avatar/small/matt.jpg")
@@ -36,6 +51,9 @@ dom-module#quill-writer
   script.
     Polymer({
       is: 'quill-writer',
+      properties: {
+        topics: { type: Array }
+      },
       // these are scratchpads for sketches of behavior
       // please do re-write them in a more comprehensive way!
       // TODO: dig into `virtual-dom`
@@ -45,11 +63,34 @@ dom-module#quill-writer
       _showSource: function() {
         $(this.$.viewer).slideToggle();
       },
+      _lowerCard: function() {
+        $(this.$.card).removeClass('raised');
+      },
+      _raiseCard: function() {
+        $(this.$.card).addClass('raised');
+      },
+      _showExtra: function() {
+        $(this.$.extra).slideDown();
+        $(this.$.tags).slideDown();
+        
+        var self = this;
+        // TODO: use procure
+        $.getJSON('https://maki.io/topics', function(topics) {
+          self.topics = topics.map(function(topic) {
+            topic.link = 'https://maki.io/topics/' + topic.id;
+            return topic;
+          });
+          $('.ui.search').dropdown();
+        });
+      },
+      _save: function() {
+        // TODO: implement
+      },
       ready: function() {
         console.log('[QUILL:WRITER]', 'ready');
         
         var self = this;
-        
+
         var editor = new MediumEditor(self.$.editor, {
           activeButtonClass: 'active',
           buttonLabels: 'fontawesome',
@@ -344,16 +385,4 @@ dom-module#quill-writer
         
         $('.tooltipped').popup();
       },
-      _save: function() {
-        // TODO: implement
-      },
-      _lowerCard: function() {
-        $(this.$.card).removeClass('raised');
-      },
-      _raiseCard: function() {
-        $(this.$.card).addClass('raised');
-      },
-      _showExtra: function() {
-        $(this.$.extra).slideDown();
-      }
     });
