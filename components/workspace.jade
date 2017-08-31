@@ -14,9 +14,30 @@ dom-module#quill-workspace
       h2.ui.horizontal.header.divider Welcome home!
       
     .ui.text.container.vertical.stripe.content.segment.unpadded
-      quill-writer
+      quill-draft-card.ui.fluid.card#prompt
+      
+      .ui.text.container.vertical.stripe.content.segment
+        quill-draft-list.ui.cards(src="/drafts")
   
   script.
     Polymer({
-      is: 'quill-workspace'
+      is: 'quill-workspace',
+      ready: function() {
+        console.log('[QUILL:WORKSPACE]');
+        
+        this.$.prompt.placeholders = [
+          {
+            tag: 'h2',
+            text: 'Title'
+          }, // to enable later */
+          {
+            tag: 'p',
+            text: 'Tell your story…',
+          }
+        ];
+        
+        this.$.prompt._enableEditing();
+        this.$.prompt.focus();
+
+      }
     });

@@ -23,10 +23,14 @@
   },
   "homepage": "https://github.com/martindale/roleplaygateway",
   "dependencies": {
-    "maki": "git://github.com/martindale/maki#0.3",
+    "maki": "github:martindale/maki#tatami",
     "maki-auth-simple": "^0.1.1",
     "maki-client-level": "^0.1.0",
-    "maki-client-markdown": "martindale/maki-client-markdown",
+    "maki-client-markdown": "github:martindale/maki-client-markdown",
+    "maki-client-moment": "martindale/maki-client-moment",
+    "maki-client-remote": "github:martindale/maki-client-remote",
+    "maki-client-search": "github:martindale/maki-client-search",
+    "maki-client-traverse": "^0.1.0",
     "maki-passport-local": "0.0.4"
   }
 }

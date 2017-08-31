@@ -1,92 +1,64 @@
-dom-module#quill-writer
-  link(rel="stylesheet", href="/css/medium-editor.css")
+dom-module#quill-draft-card
   template
     style.
       :host ::content #editor {
-        min-height: 10em;
+        min-height: 6em;
         font-size: 1.2em;
         padding: 2em;
       }
-
-      :host ::content .tappable {
-        cursor: pointer;
+      
+      :host ::content #editor:focus {
+        outline: none;
       }
       
-      :host ::content .search.dropdown > .label p {
-        display: none;
-      }
-      
-      :host ::content .two.right.floated.buttons {
-        float: right;
-        width: 42%;
-      }
-  
-    input#source(type="hidden", name="content", value$="{{data.content}}")
-    #editor
 
-  script(src="/scripts/medium-editor.js")
-  script(src="/scripts/me-markdown.standalone.js")
-  script(src="/scripts/medium-editor-multi-placeholders-plugin.js")
+    .content
+      .ui.buttons.right.floated.meta
+        a.ui.mini.basic.icon.button(on-tap="_enableEditing")
+          i.edit.icon
+        a.ui.mini.basic.icon.button(on-tap="_toggleSourceView")
+          i.code.icon
+      .text.content
+        #editor
+    .extra.content.hidden#tags
+      .ui.form
+        .fluid.field
+          .ui.multiple.search.selection.dropdown(multiple="")
+            input(type="hidden", name="tags")
+            i.dropdown.icon
+            .default.text Tags…
+            .menu
+              template(is="dom-repeat", items="{{topics}}")
+                .item.title(data-value$="{{item.id}}", href$="{{item.link}}")
+                  strong.header
+                    small.prefix &#35;
+                    span {{item.id}}
+                  p {{item.description}}
+    .extra.content.hidden#source
+      form.ui.form
+        .field
+          textarea {{source}}
+    .extra.content.hidden#metadata
+      a.right.floated.author(href$="{{data.author.link}}")
+        img(src$="{{data.author.image}}")
+        span {{data.author.id}}
+      a.timestamp(href$="{{data.link}}")
+        i.linkify.icon
+        span {{_prettyDate(data.changed)}}
+
   script.
     Polymer({
-      is: 'quill-writer',
+      is: 'quill-draft-card',
       properties: {
         status: { type: String },
-        editor: { type: Object },
         topics: { type: Array },
-        timer: { type: Object },
-        placeholders: { type: Array, value: [] },
-        // TODO: import these from Maki
         src: { type: String , observer: '_load' },
-        data: { type: Object , value: {}, observer: '_dataChanged', notify: true },
+        data: { type: Object , observer: '_dataChanged' , value: {} , notify: true },
         state: { type: String },
-        source: { type: String , observer: '_render' },
-        output: { type: String }
-      },
-      // these are scratchpads for sketches of behavior
-      // please do re-write them in a more comprehensive way!
-      // TODO: dig into `virtual-dom`
-      _viewSource: function() {
-        $(this.$.viewer).slideToggle();
-      },
-      _showPreview: function() {
-        $(this.$.preview).slideDown();
-      },
-      _showTags: function() {
-        $(this.$.tags).slideDown();
-      },
-      _showExtra: function() {
-        $(this.$.extra).slideDown();
-      },
-      _showMetadata: function() {
-        $(this.$.metadata).slideDown();
-      },
-      _showStatus: function() {
-        $(this.$.status).slideDown();
-      },
-      _showPublish: function() {
-        $(this.$.publish).slideDown();
-      },
-      _showLink: function() {
-        $(this.$.link).fadeIn();
-      },
-      _authenticate: function() {
-        this.fire('authenticate');
-      },
-      _destroy: function(done) {
-        var self = this;
-        if (!done) done = new Function();
-        
-        $(self).slideUp(function() {
-          self.remove();
-          done();
-        });
-      },
-      _reload: function() {
-        var self = this;
-        self._destroy(function() {
-          
-        });
+        source: { type: String , observer: '_sourceChanged' },
+        output: { type: String },
+        actions: { type: Object , value: {} },
+        placeholders: { type: Array , value: [] }
       },
       _respondToInput: function() {
         var self = this;
@@ -94,20 +66,81 @@ dom-module#quill-writer
         if (content.length > 0) {
           self._save(function(err, obj) {
             self.set('data', obj);
+            self._showMetadata();
           });
         }
       },
-      _dataChanged: function(data, old) {
-        var self = this;
-        self.fire('data:changed', data);
+      _prettyDate: function(input) {
+        return moment(input).fromNow();
       },
-      _sourceChanged: function(source, old) {
-        console.log('[QUILL:WRITER]', '_sourceChanged', source, old);
+      _lowerCard: function() {
+        $(this).removeClass('raised');
+      },
+      _raiseCard: function() {
+        $(this).addClass('raised');
+      },
+      _showMetadata: function() {
+        $(this.$.metadata).slideDown();
+      },
+      _enableEditing: function() {
+        var self = this;
+        console.log('[QUILL:DRAFT-CARD]', '_enableEditing');
+        self._createEditor();
+      },
+      _toggleSourceView: function() {
+        $(this.$.source).slideToggle();
+      },
+      _dataChanged: function(data, old) {
+        console.log('[QUILL:DRAFT-CARD]', 'data:change', data);
       },
       _render: function() {
         var self = this;
         console.log('[QUILL:WRITER]', '_render', self.source);
         self.$.editor.innerHTML = window.markdown(self.source || '');
+      },
+      _sourceChanged: function(source, old) {
+        var self = this;
+        self._render();
+      },
+      _guid: function guid() {
+        function s4() {
+          return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+        }
+        return s4() + s4() + s4() + s4() + s4() + s4() + s4() + s4();
+      },
+      _collectTags: function() {
+        var self = this;
+        // TODO: use procure
+        $.getJSON('https://maki.io/topics', function(topics) {
+          self.topics = topics.map(function(topic) {
+            topic.link = 'https://maki.io/topics/' + topic.id;
+            return topic;
+          });
+          $('.ui.search').dropdown({
+            on: 'focus' // TODO: consider proposing change in default upstream
+          });
+        });
+      },
+      _load: function(uri, back) {
+        var self = this;
+        console.log('[QUILL:DRAFT-CARD]', '_load', uri, back);
+        self.toggleClass('loading', true);
+
+        // TODO: use this API instead:
+        // fabric.get(self.src, function(err, data) { ... });
+        var datastore = document.querySelector('maki-datastore[for=quill]');
+        datastore._get(self.src, function(err, data) {
+          console.log('[QUILL:DRAFT-CARD]', '_load', 'data', data);
+          self.set('data', data);
+          self.set('source', data.content);
+
+          // TODO: build these from a token
+          self.set('actions.edit', data.link + '#edit');
+          self.toggleClass('loading', false);
+        });
+
       },
       _save: function(cb) {
         var self = this;
@@ -131,7 +164,6 @@ dom-module#quill-writer
         
         datastore._get(link, function(err, doc) {
           console.log('[QUILL:WRITER]', '_save', '_get', 'found:', err, doc);
-        
           if (!doc || !doc.length) {
             var fresh = true;
             draft.created = now;
@@ -149,39 +181,10 @@ dom-module#quill-writer
           });
         });
       },
-      _collectTags: function() {
-        var self = this;
-        // TODO: use procure
-        $.getJSON('https://maki.io/topics', function(topics) {
-          self.topics = topics.map(function(topic) {
-            topic.link = 'https://maki.io/topics/' + topic.id;
-            return topic;
-          });
-          $('.ui.search').dropdown({
-            on: 'focus' // TODO: consider proposing change in default upstream
-          });
-        });
-      },
-      _guid: function guid() {
-        function s4() {
-          return Math.floor((1 + Math.random()) * 0x10000)
-            .toString(16)
-            .substring(1);
-        }
-        return s4() + s4() + s4() + s4() + s4() + s4() + s4() + s4();
-      },
-      _focus: function() {
-        var self = this;
-        //var element = document.querySelector('');
-        //self.editor.selectElement(self.$.editor);
-      },
-      _enableEditor: function() {
-        var self = this;
-        console.log('[QUILL:WRITER]', '_enableEditor');
-        self._createEditor();
-      },
       _createEditor: function() {
         var self = this;
+        
+        console.log('[QUILL:DRAFT-CARD]', '_createEditor');
 
         self.editor = new MediumEditor(self.$.editor, {
           activeButtonClass: 'active',
@@ -468,29 +471,7 @@ dom-module#quill-writer
         });
 
       },
-      _load: function() {
-        var self = this;
-
-        self.toggleClass('loading', true);
-
-        // TODO: use this API instead:
-        // fabric.get(self.src, function(err, data) { ... });
-        var datastore = document.querySelector('maki-datastore[for=quill]');
-        if (!datastore) return;
-        
-        datastore._get(self.src, function(err, data) {
-          if (data) {
-            self.data = data;
-          }
-          self.toggleClass('loading', false);
-        });
-      },
       ready: function() {
-        console.log('[QUILL:WRITER]', 'ready');
-        var self = this;
-        self.data.id = self._guid();
-        
-        console.log('[QUILL:WRITER]', 'ready', 'setting guid:', self.data.id);
-        console.log('[QUILL:WRITER]', 'ready', 'building editor...');
-      },
+        console.log('[QUILL:DRAFT-CARD]', 'ready');
+      }
     });

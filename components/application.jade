@@ -45,10 +45,18 @@ dom-module#maki-application
       :host ::content maki-masthead maki-navbar .logo.item img {
         margin-right: 0.5em !important;
       }
+      
+      :host ::content .prefix, :host ::content .subtle {
+        color: rgba(0, 0, 0, 0.4);
+      }
+
+      :host ::content .hidden {
+        display: none;
+      }
 
     maki-content-store(name="#{config.service.namespace}")
     maki-datastore(name="#{config.service.namespace}", for="#{config.service.namespace}")
-    maki-channel(autoconnect, reconnect="true")
+    //-maki-channel(autoconnect, reconnect="true")
     //-maki-service
     //-maki-peer-manager(autoconnect, limit="128", strategy="lowest-latency")
 
@@ -90,11 +98,8 @@ dom-module#maki-application
         
         for (var route in self.routes) {
           var regex = self.routes[route];
-          
-          console.log('[QUILL:APPLICATION]', '_pathToResource', 'testing', regex);
-          
           if (regex.test(path)) {
-            resource = self.resourceMap[route];
+            resource = self.definitions[route];
             break;
           }
         }
@@ -122,10 +127,10 @@ dom-module#maki-application
           var regex = self.routes[route];
           
           console.log('[MAKI:APPLICATION]', '_route', 'routing', route, regex);
-          console.log('[MAKI:APPLICATION]', '_route', 'comparing...', ctx.path);
+          console.log('[MAKI:APPLICATION]', '_route', 'comparing...', ctx.path, 'from context:', ctx);
           
           if (regex.test(ctx.path)) {
-            masthead = self.resourceMap[route].options.components.masthead;
+            masthead = self.definitions[route].options.components.masthead;
             
             component = self.components[route];
             view = document.createElement(component);
@@ -135,7 +140,7 @@ dom-module#maki-application
             console.log('[MAKI:APPLICATION]', '_route', 'masthead:', masthead);
 
             view.action = self.actionMap[route];
-            view.type = self.resourceMap[route];
+            view.type = self.definitions[route];
             view.type.route = route;
 
             break;
@@ -154,6 +159,18 @@ dom-module#maki-application
         while (viewport.hasChildNodes()) {
           viewport.removeChild(viewport.lastChild);
         }
+        
+        document.addEventListener('view:ready', function() {
+          console.log('[MAKI:APPLICATION]', 'view attached!');
+          if (ctx.hash) {
+            console.log('[MAKI:APPLICATION]', 'we have a hash!', ctx.hash);
+            // TODO: use a whitelist from the resource definition
+            if (typeof view[ctx.hash] === 'function') {
+              console.log('[MAKI:APPLICATION]', 'we have a function!', view[ctx.hash]);
+              view[ctx.hash].apply(view);
+            }
+          }
+        });
 
         viewport.appendChild(view);
         viewport.toggleClass('loading', false);
@@ -178,7 +195,8 @@ dom-module#maki-application
          var self = this;
          var _route = self._route.bind(self);
          
-         self.resourceMap = {};
+         self.definitions = {};
+         self.datastores = {};
          self.actionMap = {};
          
          console.log('[MAKI:APPLICATION]', '_resourcesUpdated', resources);
@@ -194,9 +212,16 @@ dom-module#maki-application
              
              self.routes[route] = new RegExp(eval(definition.paths[action]));
              self.components[route] = definition.components[action];
-             self.resourceMap[route] = definition;
+             self.definitions[route] = definition;
              self.actionMap[route] = action;
              
+             var resource = document.createElement('maki-resource');
+
+             resource.name = name;
+             resource.definition = definition;
+             
+             self.datastores[name] = resource;
+
              page(route, _route);
            });
          });
@@ -230,6 +255,10 @@ dom-module#maki-application
        },
        ready: function() {
          console.log('[MAKI:APPLICATION]', 'ready');
+         var self = this;
+         /*self.on('datastore:change', function(e, q, r) {
+           console.log('eyooooooooo',e,q,r);
+         });*/
 
          $('.tooltipped').popup();
          // fix menu when passed

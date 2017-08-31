@@ -1,0 +1,25 @@
+dom-module#quill-post-viewer
+  template
+    .ui.text.container.vertical.stripe.content.segment
+      quill-draft-card.ui.fluid.card#reader
+
+  script.
+    Polymer({
+      is: 'quill-post-viewer',
+      properties: {
+        src: { type: String , observer: '_srcChanged' }
+      },
+      edit: function() {
+        var self = this;
+        console.log('HEY THERE edit()!');
+        self.$.reader._enableEditor();
+      },
+      _srcChanged: function(uri, old) {
+        var self = this;
+        self.$.reader.src = self.src;
+      },
+      ready: function() {
+        console.log('[QUILL:POST-VIEWER]', 'ready');
+        this.fire('view:ready');
+      }
+    });
